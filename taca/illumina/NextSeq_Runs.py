@@ -100,8 +100,11 @@ class NextSeq_Run(Run):
                         cl.append('--{}'.format(option))
             logger.info(("BCL to FASTQ conversion and demultiplexing started for "
                  " run {} on {}".format(os.path.basename(self.id), datetime.now())))
-            misc.call_external_command_detached(cl, with_log_files=True)
-            
+            try:
+                misc.call_external_command_detached(cl, with_log_files=True)
+            except e:
+                logger.error("There was an error running bcl2fasq")
+                raise e
         return True
     
     def compute_undetermined(self):

@@ -170,7 +170,10 @@ def run_preprocessing(run, force_trasfer=True, statusdb=True):
                 return 
             # Otherwise it is fine, process it
             logger.info(("Starting BCL to FASTQ conversion and demultiplexing for run {}".format(run.id)))
-            run.demultiplex_run()
+            try:
+                run.demultiplex_run()
+            except:
+                pass
         elif run.get_run_status() == 'IN_PROGRESS':
             logger.info(("BCL conversion and demultiplexing process in "
                          "progress for run {}, skipping it".format(run.id)))
