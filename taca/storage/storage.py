@@ -28,7 +28,9 @@ def cleanup_nas(seconds):
     mail_recipients = CONFIG.get('mail', {}).get('recipients')
     check_demux = CONFIG.get('storage', {}).get('check_demux', False)
     host_name = os.getenv('HOSTNAME', os.uname()[1]).split('.', 1)[0]
-    for data_dir in CONFIG.get('storage').get('data_dirs'):
+    dirs = CONFIG.get('storage').get('data_dirs')
+    dirs = dirs if isinstance(dirs, list) else [dirs]
+    for data_dir in dirs:
         logger.info('Moving old runs in {}'.format(data_dir))
         with filesystem.chdir(data_dir):
             for run in [r for r in os.listdir(data_dir) if re.match(filesystem.RUN_RE, r)]:
@@ -60,8 +62,10 @@ def cleanup_processing(seconds):
     :param int seconds: Days/hours converted as second to consider a run to be old
     """
     try:
-        #Remove old runs from archiving dirs
-        for archive_dir in CONFIG.get('storage').get('archive_dirs').values():
+        # Remove old runs from archiving dirs
+        dirs = CONFIG.get('storage').get('archive_dirs')
+        dirs = dirs if isinstance(dirs, list) else [dirs]
+        for archive_dir in dirs:
             logger.info('Removing old runs in {}'.format(archive_dir))
             with filesystem.chdir(archive_dir):
                 for run in [r for r in os.listdir(archive_dir) if re.match(filesystem.RUN_RE, r)]:
