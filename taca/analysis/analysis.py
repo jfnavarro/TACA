@@ -73,7 +73,7 @@ def transfer_run(run_dir, analysis):
                             os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv'),
                             analysis) 
 
-def run_preprocessing(run, force_trasfer=True):
+def run_preprocessing(run):
     """ Run demultiplexing in all data directories
         :param str run: Process a particular run instead of looking for runs
         :param bool force_tranfer: if set to True the FC is transferred also if fails QC
@@ -138,7 +138,7 @@ def run_preprocessing(run, force_trasfer=True):
             logger.warning("Unrecognized instrument type or incorrect run folder {}".format(run))
             raise RuntimeError("Unrecognized instrument type or incorrect run folder {}".format(run))
         else:
-            _process(runObj, force_trasfer)
+            _process(runObj)
     else:
         data_dirs = CONFIG.get('analysis').get('data_dirs')
         for data_dir in data_dirs:
@@ -149,10 +149,9 @@ def run_preprocessing(run, force_trasfer=True):
                 runObj = get_runObj(_run)
                 if not runObj:
                     logger.warning("Unrecognized instrument type or incorrect run folder {}".format(_run))
-                    raise RuntimeError("Unrecognized instrument type or incorrect run folder {}".format(_run))
                 else:
                     try:
-                        _process(runObj, force_trasfer)
+                        _process(runObj)
                     except:
                         # this function might throw and exception,
                         # it is better to continue processing other runs

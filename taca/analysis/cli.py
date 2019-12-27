@@ -13,15 +13,12 @@ def analysis():
 @analysis.command()
 @click.option('-r', '--run', type=click.Path(exists=True), default=None,
 				 help='Demultiplex only a particular run')
-@click.option('--force', 
-			is_flag=True, 
-			help='If specified tranfers always the runs, despite they fail QC. Mail is sent anyway' )
 
-def demultiplex(run, force):
+def demultiplex(run):
 	"""
 	Demultiplex all runs present in the data directories
 	"""
-	an.run_preprocessing(run, force_trasfer=force)
+	an.run_preprocessing(run)
 
 @analysis.command()
 @click.option('-a','--analysis', 
