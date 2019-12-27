@@ -7,8 +7,8 @@ from taca.utils import misc
 @click.group()
 @click.pass_context
 def storage(ctx):
-	""" Storage management methods and utilities """
-	pass
+    """Storage management methods and utilities"""
+    pass
 
 # Storage subcommands
 @storage.command()
@@ -27,5 +27,3 @@ def cleanup(ctx, days, hours, site, dry_run):
         st.cleanup_nas(seconds)
     if site == 'processing-server':
         st.cleanup_processing(seconds)
-    if site in ['illumina','analysis','archive']:
-        st.cleanup_uppmax(site, seconds, dry_run)

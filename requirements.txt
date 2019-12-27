@@ -1,8 +1,4 @@
 click
 requests
 pyyaml
-statusdb
 flowcell_parser
-beautifulsoup4
-#PyOpenSSL
-python-crontab

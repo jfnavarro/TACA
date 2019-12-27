@@ -12,7 +12,6 @@ from taca.utils import config as conf
 
 logger = logging.getLogger(__name__)
 
-
 @click.group()
 @click.version_option(__version__)
 # Priority for the configuration file is: environment variable > -c option > default
@@ -32,7 +31,6 @@ def cli(ctx, config_file):
 		taca.log.init_logger_file(log_file, level)
 
 	logger.debug('starting up CLI')
-
 
 #Add subcommands dynamically to the CLI
 for entry_point in iter_entry_points('taca.subcommands'):

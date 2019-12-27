@@ -1,6 +1,6 @@
-""" Miscellaneous or general-use methods
+""" 
+Miscellaneous or general-use methods
 """
-import couchdb
 import hashlib
 import os
 import smtplib
@@ -11,10 +11,9 @@ import glob
 from datetime import datetime
 from email.mime.text import MIMEText
 
-
 def send_mail(subject, content, receiver):
-    """ Sends an email
-
+    """
+    Sends an email
     :param str subject: Subject for the email
     :param str content: Content of the email
     :param str receiver: Address to send the email
@@ -30,10 +29,9 @@ def send_mail(subject, content, receiver):
     s.sendmail('TACA', [receiver], msg.as_string())
     s.quit()
 
-
 def call_external_command(cl, with_log_files=False, prefix=None, log_dir=""):
-    """ Executes an external command
-
+    """
+    Executes an external command
     :param string cl: Command line to be executed (command + options and parameters)
     :param bool with_log_files: Create log files for stdout and stderr
     :param string prefix: the prefics to add to log file
@@ -67,13 +65,12 @@ def call_external_command(cl, with_log_files=False, prefix=None, log_dir=""):
             stdout.close()
             stderr.close()
 
-
 def call_external_command_detached(cl, with_log_files=False, prefix=None):
-    """ Executes an external command
-
-        :param string cl: Command line to be executed (command + options and parameters)
-        :param bool with_log_files: Create log files for stdout and stderr
-        """
+    """
+    Executes an external command
+    :param string cl: Command line to be executed (command + options and parameters)
+    :param bool with_log_files: Create log files for stdout and stderr
+    """
     if type(cl) == str:
         cl = cl.split(' ')
     command = os.path.basename(cl[0])
@@ -100,12 +97,11 @@ def call_external_command_detached(cl, with_log_files=False, prefix=None):
             stderr.close()
     return p_handle
 
-
 def days_old(date, date_format="%y%m%d"):
-    """ Return the number days between today and given date
-
-        :param string date: date to ckeck with
-        :param date_format: the format of given 'date' string
+    """
+    Return the number days between today and given date
+    :param string date: date to ckeck with
+    :param date_format: the format of given 'date' string
     """
     try:
         time_dif = datetime.today() - datetime.strptime(date,date_format)
@@ -113,12 +109,11 @@ def days_old(date, date_format="%y%m%d"):
         return None
     return time_dif.days
 
-
 def to_seconds(days=None, hours=None):
-    """ Convert given day/hours to seconds and return
-
-        :param int days: days to be converted
-        :param int hours: hours to be converted
+    """
+    Convert given day/hours to seconds and return
+    :param int days: days to be converted
+    :param int hours: hours to be converted
     """
     #only either days or hours should be speciefied, but atleast one should be specified
     if days and hours:
@@ -133,15 +128,14 @@ def to_seconds(days=None, hours=None):
         return 3600 * hours
 
 def hashfile(afile, hasher='sha1', blocksize=65536):
-    """ Calculate the hash digest of a file with the specified algorithm and 
-        return it.
-        
-        This solution was adapted from http://stackoverflow.com/a/3431835
-    
-        :param string afile: the file to calculate the digest for
-        :param string hasher: the hashing algorithm to be used, default is sha1
-        :param int blocksize: the blocksize to use, default is 65536 bytes
-        :returns: the hexadecimal hash digest or None if input was not a file
+    """
+    Calculate the hash digest of a file with the specified algorithm and 
+    return it.
+    This solution was adapted from http://stackoverflow.com/a/3431835
+    :param string afile: the file to calculate the digest for
+    :param string hasher: the hashing algorithm to be used, default is sha1
+    :param int blocksize: the blocksize to use, default is 65536 bytes
+    :returns: the hexadecimal hash digest or None if input was not a file
     """ 
     if not os.path.isfile(afile):
         return None
@@ -153,90 +147,24 @@ def hashfile(afile, hasher='sha1', blocksize=65536):
             buf = fh.read(blocksize)
     return hashobj.hexdigest()
 
-    
-def query_yes_no(question, default="yes", force=False):
-    """Ask a yes/no question via raw_input() and return their answer.
-    "question" is a string that is presented to the user. "default"
-    is the presumed answer if the user just hits <Enter>. It must be
-    "yes" (the default), "no" or None (meaning an answer is required
-    of the user). The force option simply sets the answer to default.
-    The "answer" return value is one of "yes" or "no".
-
-    :param question: the displayed question
-    :param default: the default answer
-    :param force: set answer to default
-    :returns: yes or no
-    """
-    valid = {"yes":True,   "y":True,  "ye":True,
-             "no":False,     "n":False}
-    if default == None:
-        prompt = " [y/n] "
-    elif default == "yes":
-        prompt = " [Y/n] "
-    elif default == "no":
-        prompt = " [y/N] "
-    else:
-        raise ValueError("invalid default answer: '%s'" % default)
-
-    while True:
-        sys.stdout.write(question + prompt)
-        if not force:
-            choice = raw_input().lower()
-        else:
-            choice = "yes"
-        if default is not None and choice == '':
-            return valid[default]
-        elif choice in valid:
-            return valid[choice]
-        else:
-            sys.stdout.write("Please respond with 'yes' or 'no' "\
-                                 "(or 'y' or 'n').\n")
-
-
 def return_unique(seq):
     seen = set()
     seen_add = seen.add
-    return [ x for x in seq if not (x in seen or seen_add(x))]
-
+    return [x for x in seq if not (x in seen or seen_add(x))]
 
 def link_undet_to_sample(run, dmux_folder, lane, path_per_lane):
-    """symlinks the undetermined file to the right sample folder with a RELATIVE path so it's carried over by rsync
-    
+    """
+    Symlinks the undetermined file to the right sample 
+    folder with a RELATIVE path so it's carried over by rsync
     :param run: path of the flowcell
     :type run: str
     :param lane: lane identifier
     :type lane: int
     :param path_per_lane: {lane:path/to/the/sample}
-    :type path_per_lane: dict"""
+    :type path_per_lane: dict
+    """
     for fastqfile in glob.glob(os.path.join(run, dmux_folder, '*Undetermined*_L0?{}_*'.format(lane))):
         if not os.path.exists(os.path.join(path_per_lane[lane], os.path.basename(fastqfile))):
             fqbname=os.path.basename(fastqfile)
-            os.symlink(os.path.join('..','..',fqbname), os.path.join(path_per_lane[lane], os.path.basename(fastqfile)))
-
-
-def run_is_demuxed(run, couch_info=None):
-    """Check in StatusDB 'x_flowcells' database if the given run has an entry which means it was
-    demultiplexed (as TACA only creates a document upon successfull demultiplexing)
-    
-    :param str run: run name
-    :param dict couch_info: a dict with 'statusDB' info
-    """
-    # check if statusdb info is given
-    if not couch_info:
-        raise SystemExit("To check for demultiplexing is enabled in config file but no 'statusDB' info was given")
-    run_terms = run.split('_')
-    run_date = run_terms[0]
-    run_fc = run_terms[-1]
-    run_name = "{}_{}".format(run_date, run_fc)
-    # connect to statusdb using info fectched from config file
-    try:
-        server = "http://{username}:{password}@{url}:{port}".format(url=couch_info['url'],username=couch_info['username'],
-                                                                    password=couch_info['password'],port=couch_info['port'])
-        couch = couchdb.Server(server)
-        fc_db = couch[couch_info['db']]
-        fc_names = [entry.key for entry in fc_db.view("names/name", reduce=False)]
-    except Exception, e:
-        raise e
-    if run_name in fc_names:
-        return True
-    return False
+            os.symlink(os.path.join('..','..',fqbname), 
+                       os.path.join(path_per_lane[lane], os.path.basename(fastqfile)))

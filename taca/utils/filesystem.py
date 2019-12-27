@@ -3,8 +3,6 @@
 import contextlib
 import os
 import re
-import shutil
-from subprocess import check_call, CalledProcessError, Popen, PIPE
 
 RUN_RE = '^\d{6}_[a-zA-Z\d\-]+_\d{4}_[AB0][A-Z\d\-]+$'
 PROJECT_RE = '[a-zA-Z]+\.[a-zA-Z]+_\d{2}_\d{2}'
@@ -32,47 +30,13 @@ def create_folder(target_folder):
     """
     try:
         os.makedirs(target_folder)
-    except OSError as e:
+    except OSError:
         pass
     return os.path.exists(target_folder)
 
-def is_in_swestore(f):
-    """ Checks if a file exists in Swestore
-
-    :param f str: File to check
-    :returns bool: True if the file is already in Swestore, False otherwise
-    """
-    with open(os.devnull, 'w') as null:
-        try:
-            check_call(['ils', f], stdout=null, stderr=null)
-        except CalledProcessError:
-            # ils will fail if the file does not exist in swestore
-            return False
-        else:
-            return True
-
-def list_runs_in_swestore(path, pattern=RUN_RE, no_ext=False):
-    """
-        Will list runs that exist in swestore
-
-        :param str path: swestore path to list runs
-        :param str pattern: regex pattern for runs
-    """
-    try:
-        status = check_call(['icd', path])
-        proc = Popen(['ils'], stdout=PIPE)
-        contents = [c.strip() for c in proc.stdout.readlines()]
-        runs = [r for r in contents if re.match(pattern, r)]
-        if no_ext:
-            runs = [r.split('.')[0] for r in runs]
-        return runs
-    except CalledProcessError:
-        return []
-
-
 def is_in_file(file_path, text):
-    """ Looks for text appearing in a file.
-
+    """
+    Looks for text appearing in a file.
     :param str file_path: Path to the source file
     :param str text: Text to find in the file
     :raises OSError: If the file does not exist
@@ -83,17 +47,19 @@ def is_in_file(file_path, text):
     return text in content
 
 def control_fastq_filename(demux_folder):
-    """Looks for fastq files with a hyphen in the sample nsame
+    """
+    Looks for fastq files with a hyphen in the sample nsame
     and turns it in an underscore.
-
     :param str demux_folder: path to the demultiplexed folder
     """
     pattern=re.compile("^(P[0-9]+)-([0-9]{3,4}).+fastq.*$")
-    for root, dirs, files in os.walk(demux_folder):
+    for root, _, files in os.walk(demux_folder):
         for f in files:
             matches=pattern.search(f)
             if matches:
-                new_name=f.replace("{}-{}".format(matches.group(1), matches.group(2)), "{}_{}".format(matches.group(1), matches.group(2)))
+                new_name=f.replace("{}-{}".format(matches.group(1),
+                                                   matches.group(2)), "{}_{}".format(matches.group(1), 
+                                                                                     matches.group(2)))
                 os.rename(os.path.join(root, f), os.path.join(root, new_name))
             
 

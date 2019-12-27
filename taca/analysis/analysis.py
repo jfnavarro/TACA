@@ -5,14 +5,9 @@ import glob
 import logging
 import os
 
-from shutil import copyfile
-from taca.illumina.HiSeqX_Runs import HiSeqX_Run
-from taca.illumina.HiSeq_Runs import HiSeq_Run
-from taca.illumina.MiSeq_Runs import MiSeq_Run
 from taca.illumina.NextSeq_Runs import NextSeq_Run
 from taca.utils.config import CONFIG
 
-import flowcell_parser.db as fcpdb
 from flowcell_parser.classes import RunParametersParser
 
 logger = logging.getLogger(__name__)
@@ -32,7 +27,8 @@ def get_runObj(run):
     elif os.path.exists(os.path.join(run, 'RunParameters.xml')):
         run_parameters_file = "RunParameters.xml"
     else:
-        logger.error("Cannot find RunParameters.xml or runParameters.xml in the run folder for run {}".format(run))
+        logger.error("Cannot find RunParameters.xml or runParameters.xml in "
+                     "the run folder for run {}".format(run))
         return
 
     rppath = os.path.join(run, run_parameters_file)
@@ -56,71 +52,12 @@ def get_runObj(run):
             # (in case ApplicationName is not found, get returns None)
             runtype = rp.data['RunParameters']["Setup"].get("ApplicationName", "")
 
-        if "HiSeq X" in runtype:
-            return HiSeqX_Run(run, CONFIG["analysis"]["HiSeqX"])
-        elif "HiSeq" in runtype or "TruSeq" in runtype:
-            return HiSeq_Run(run, CONFIG["analysis"]["HiSeq"])
-        elif "MiSeq" in runtype:
-            return MiSeq_Run(run, CONFIG["analysis"]["MiSeq"])
-        elif "NextSeq" in runtype:
+        if "NextSeq" in runtype:
             return NextSeq_Run(run, CONFIG["analysis"]["NextSeq"])
         else:
             logger.warn("Unrecognized run type {}, cannot archive the run {}. "
                         "Someone as likely bought a new sequencer without telling "
                         "it to the bioinfo team".format(runtype, run))
-    # Not necessary as the function will return None at this point but
-    # just for being explicit
-    return None
-
-def upload_to_statusdb(run_dir):
-    """ Function to upload run_dir informations to statusDB directly from click interface
-        :param run_dir: run name identifier
-        :type run: string
-        :rtype: None
-    """
-    runObj = get_runObj(run_dir)
-    if runObj:
-        # runObj can be None
-        # Make the actual upload
-        _upload_to_statusdb(runObj)
-
-def _upload_to_statusdb(run):
-    """ Triggers the upload to statusdb using the dependency flowcell_parser
-        :param Run run: the object run
-    """
-    couch = fcpdb.setupServer(CONFIG)
-    db = couch[CONFIG['statusdb']['xten_db']]
-    parser = run.runParserObj
-    # Check if I have NoIndex lanes
-    # This could be refactored and some checks for key exceptions should be added
-    for element in parser.obj['samplesheet_csv']:
-        if 'NoIndex' in element['index'] or not element['index']: # NoIndex in the case of HiSeq, empty in the case of HiSeqX
-            lane = element['Lane'] # this is a lane with NoIndex
-            # in this case PF Cluster is the number of undetermined reads
-            try:
-                PFclusters = parser.obj['Undetermined'][lane]['unknown']
-            except KeyError:
-                logger.error("While taking extra care of lane {} of NoIndex type " \
-                             "I found out that not all values were available".format(lane))
-                continue
-            # In Lanes_stats fix the lane yield
-            parser.obj['illumina']['Demultiplex_Stats']['Lanes_stats'][int(lane) - 1]['PF Clusters'] = str(PFclusters)
-            # Now fix Barcode lane stats
-            updated = 0 # Check that only one update is made
-            for sample in parser.obj['illumina']['Demultiplex_Stats']['Barcode_lane_statistics']:
-                if lane in sample['Lane']:
-                    updated +=1
-                    sample['PF Clusters'] = str(PFclusters)
-            if updated != 1:
-                logger.error("While taking extra care of lane {} of NoIndex type "
-                             "I updated more than once the barcode_lane. "
-                             "This is too much to continue so I will fail.".format(lane))
-                os.sys.exit()
-            # If I am here it means I changed the HTML representation to something
-            # else to accomodate the wired things we do
-            # someone told me that in such cases it is better to put a place holder for this
-            parser.obj['illumina']['Demultiplex_Stats']['NotOriginal'] = "True"
-    fcpdb.update_doc( db , parser.obj, over_write_db_entry=True)
 
 def transfer_run(run_dir, analysis):
     """ Interface for click to force a transfer a run to uppmax
@@ -132,16 +69,16 @@ def transfer_run(run_dir, analysis):
         # Maybe throw an exception if possible?
         logger.error("Trying to force a transfer of run {} but the sequencer was not recognized.".format(run_dir))
     else:
-        runObj.transfer_run("nosync", os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv'),
-                            analysis) # do not start analsysis automatically if I force the transfer
+        runObj.transfer_run("nosync", 
+                            os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv'),
+                            analysis) 
 
-def run_preprocessing(run, force_trasfer=True, statusdb=True):
+def run_preprocessing(run, force_trasfer=True):
     """ Run demultiplexing in all data directories
         :param str run: Process a particular run instead of looking for runs
         :param bool force_tranfer: if set to True the FC is transferred also if fails QC
-        :param bool statusdb: True if we want to upload info to statusdb
     """
-    def _process(run, force_trasfer):
+    def _process(run):
         """ Process a run/flowcell and transfer to analysis server
             :param taca.illumina.Run run: Run to be processed and transferred
         """
@@ -174,46 +111,13 @@ def run_preprocessing(run, force_trasfer=True, statusdb=True):
             try:
                 run.demultiplex_run()
             except:
+                logger.info(("Error demultiplexing for run {}".format(run.id)))
                 pass
         elif run.get_run_status() == 'IN_PROGRESS':
             logger.info(("BCL conversion and demultiplexing process in "
                          "progress for run {}, skipping it".format(run.id)))
-            # In the case of Xten returns, in future have a look to Cycles.txt
-            # in the case of HiSeq check that partial demux are done and performs aggregation if this is the case
-            run.check_run_status()
-
-        # previous elif might change the status to COMPLETED (in HiSeq), therefore to avoid skipping
-        # a cycle take the last if out of the elif
-        if run.get_run_status() == 'COMPLETED':
+        elif run.get_run_status() == 'COMPLETED':
             logger.info(("Preprocessing of run {} is finished, transferring it".format(run.id)))
-            # In the case of of HiSeq this function computes undetermined indexes for NoIndex lanes
-            if not run.compute_undetermined():
-                return
-            # Otherwise I can proceed to QC
-            # Check the run QC
-            run_QC_status = run.check_QC()
-            if run_QC_status is not None:
-                # Store QC results in appropriate file and mail user if failed
-                qc_file = os.path.join(CONFIG['analysis']['status_dir'], 'qc.tsv')
-                # This method is implemented in Runs
-                run.post_qc(qc_file, run_QC_status, log_file=CONFIG['log']['file'],
-                            rcp=CONFIG['mail']['recipients'])
-            # Upload to statusDB if applies
-            if 'statusdb' in CONFIG:
-                _upload_to_statusdb(run)
-
-            # Copy demultiplex stats file to shared file system for LIMS purpose
-            if 'mfs_path' in CONFIG['analysis']:
-                try:
-                    mfs_dest = os.path.join(CONFIG['analysis']['mfs_path'][run.sequencer_type.lower()],run.id)
-                    logger.info('Copying demultiplex stats for run {} to {}'.format(run.id, mfs_dest))
-                    if not os.path.exists(mfs_dest):
-                        os.mkdir(mfs_dest)
-                    demulti_stat_src = os.path.join(run.run_dir, run.demux_dir, 'Reports',
-                                                    'html', run.flowcell_id, 'all', 'all', 'all', 'laneBarcode.html')
-                    copyfile(demulti_stat_src, os.path.join(mfs_dest, 'laneBarcode.html'))
-                except:
-                    logger.warn('Could not copy demultiplex stat file for run {}'.format(run.id))
 
             # Transfer to analysis server if flag is True
             if run.transfer_to_analysis_server:
@@ -237,7 +141,8 @@ def run_preprocessing(run, force_trasfer=True, statusdb=True):
     else:
         data_dirs = CONFIG.get('analysis').get('data_dirs')
         for data_dir in data_dirs:
-            # Run folder looks like DATE_*_*_*, the last section is the FC name. See Courtesy information from illumina of 10 June 2016 (no more XX at the end of the FC)
+            # Run folder looks like DATE_*_*_*, the last section is the FC name. 
+            # See Courtesy information from illumina of 10 June 2016 (no more XX at the end of the FC)
             runs = glob.glob(os.path.join(data_dir, '[1-9]*_*_*_*'))
             for _run in runs:
                 runObj = get_runObj(_run)
