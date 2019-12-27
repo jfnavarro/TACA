@@ -42,7 +42,6 @@ class Run(object):
         self.flowcell_id = m.group(4)
         self.CONFIG = configuration
         self._set_demux_folder(configuration)
-        self._set_run_parser_obj(configuration) # get parser object to update DB
         # This flag tells TACA to move demultiplexed files to the analysis server
         self.transfer_to_analysis_server = True
         # Probably worth to add the samplesheet name as a variable too
