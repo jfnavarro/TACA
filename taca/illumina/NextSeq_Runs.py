@@ -42,19 +42,8 @@ class NextSeq_Run(Run):
             else:
                 # otherwise this is a non NGI run
                 self.run_type = "NON-NGI-RUN"
-            # Jose : This is a hack so to not break the naming convention in the NGI
-            # The idea is that private costumers might sequence reads and in that
-            # case the demultiplexed reads should not be transfered to Uppmax
-            if ssparser.header['Description'] == "Private":
-                self.transfer_to_analysis_server = False
      
     def check_run_status(self):
-        return
-    
-    def check_QC(self):
-        return
-    
-    def post_qc(self, qc_file, status, log_file, rcp):
         return
 
     def demultiplex_run(self): 
@@ -84,8 +73,6 @@ class NextSeq_Run(Run):
                 return False
             logger.info(("Created SampleSheet.csv for Flowcell {} in {} "
                          .format(self.id, samplesheet_dest)))
-        # SampleSheet.csv generated to be used in bcl2fastq
-        self.runParserObj.samplesheet = SampleSheetParser(os.path.join(self.run_dir, "SampleSheet.csv"))
         # Make the demux call
         with chdir(self.run_dir):
             cl = [self.CONFIG.get('bcl2fastq')['bin']]
@@ -105,13 +92,6 @@ class NextSeq_Run(Run):
             except e:
                 logger.error("There was an error running bcl2fasq")
                 raise e
-        return True
-    
-    def compute_undetermined(self):
-        """ This function parses the Undetermined files per lane produced by illumina
-            for now nothing done, 
-            TODO: finish this function to deal with undetermined if necessary
-        """
         return True
         
     def _generate_clean_samplesheet(self, ssparser):
