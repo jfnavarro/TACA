@@ -135,6 +135,7 @@ def run_preprocessing(run, force_trasfer=True):
         # Needs to guess what run type I have (HiSeq, MiSeq, HiSeqX, NextSeq)
         runObj = get_runObj(run)
         if not runObj:
+            logger.warning("Unrecognized instrument type or incorrect run folder {}".format(run))
             raise RuntimeError("Unrecognized instrument type or incorrect run folder {}".format(run))
         else:
             _process(runObj, force_trasfer)
@@ -147,14 +148,15 @@ def run_preprocessing(run, force_trasfer=True):
             for _run in runs:
                 runObj = get_runObj(_run)
                 if not runObj:
-                    logger.warning("Unrecognized instrument type or incorrect run folder {}".format(run))
+                    logger.warning("Unrecognized instrument type or incorrect run folder {}".format(_run))
+                    raise RuntimeError("Unrecognized instrument type or incorrect run folder {}".format(_run))
                 else:
                     try:
                         _process(runObj, force_trasfer)
                     except:
                         # this function might throw and exception,
                         # it is better to continue processing other runs
-                        logger.warning("There was an error processing the run {}".format(run))
+                        logger.warning("There was an error processing the run {}".format(_run))
                         pass
 
 
