@@ -104,7 +104,7 @@ def run_preprocessing(run):
                             "no-sync directory".format(run.id, run.get_run_type()))
                 # Archive the run if indicated in the config file
                 if 'storage' in CONFIG:
-                    run.archive_run(CONFIG['storage']['archive_dirs'][run.sequencer_type])
+                    run.archive_run(CONFIG['storage']['archive_dirs'])
                 return
             # Otherwise it is fine, process it
             logger.info(("Starting BCL to FASTQ conversion and demultiplexing for run {}".format(run.id)))
@@ -129,7 +129,7 @@ def run_preprocessing(run):
 
             # Archive the run if indicated in the config file
             if 'storage' in CONFIG:
-                run.archive_run(CONFIG['storage']['archive_dirs'][run.sequencer_type])
+                run.archive_run(CONFIG['storage']['archive_dirs'])
 
     if run:
         # Needs to guess what run type I have (HiSeq, MiSeq, HiSeqX, NextSeq)
