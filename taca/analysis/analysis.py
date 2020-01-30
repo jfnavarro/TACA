@@ -59,20 +59,6 @@ def get_runObj(run):
                         "The sequencer must be NextSeq".format(runtype, run))
     return None
 
-def transfer_run(run_dir, analysis):
-    """ Interface for click to force a transfer a run to uppmax
-        :param: string run_dir: the run to tranfer
-        :param bool analysis: if trigger or not the analysis
-    """
-    runObj = get_runObj(run_dir)
-    if runObj is None:
-        # Maybe throw an exception if possible?
-        logger.error("Trying to force a transfer of run {} but the sequencer was not recognized.".format(run_dir))
-    else:
-        runObj.transfer_run("nosync", 
-                            os.path.join(CONFIG['analysis']['status_dir'], 'transfer.tsv'),
-                            analysis) 
-
 def run_preprocessing(run):
     """ Run demultiplexing in all data directories
         :param str run: Process a particular run instead of looking for runs
@@ -125,14 +111,14 @@ def run_preprocessing(run):
                             .format(run.id,
                                     run.CONFIG['analysis_server']['host'],
                                     run.CONFIG['analysis_server']['sync']['data_archive']))
-                run.transfer_run(t_file,  False) # Do not trigger analysis
+                run.transfer_run(t_file)
 
             # Archive the run if indicated in the config file
             if 'storage' in CONFIG:
                 run.archive_run(CONFIG['storage']['archive_dirs'])
 
     if run:
-        # Needs to guess what run type I have (HiSeq, MiSeq, HiSeqX, NextSeq)
+        # Needs to guess what run type I have (NextSeq)
         runObj = get_runObj(run)
         if not runObj:
             logger.warning("Unrecognized instrument type or incorrect run folder {}".format(run))

@@ -83,7 +83,7 @@ class Run(object):
         return os.path.exists(os.path.join(self.run_dir, 'RTAComplete.txt'))
 
     def get_run_status(self):
-        """ Return the status of the run, that is the trello card where it needs to be placed
+        """ Return the status of the run
         """
         demux_started = self._is_demultiplexing_started() # True if demux is ongoing
         demux_done = self._is_demultiplexing_done() # True if demux is done
@@ -99,12 +99,11 @@ class Run(object):
         else:
             raise RuntimeError('Unexpected status in get_run_status')
 
-    def transfer_run(self, t_file, analysis):
+    def transfer_run(self, t_file):
         """ Transfer a run to the analysis server. Will add group R/W permissions to
             the run directory in the destination server so that the run can be processed
             by any user/account in that group (i.e a functional account...). 
             :param str t_file: File where to put the transfer information
-            :param bool analysis: Trigger analysis on remote server
         """
         # TODO: check the run type and build the correct rsync command
         # The option -a implies -o and -g which is not the desired behaviour
