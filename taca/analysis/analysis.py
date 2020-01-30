@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def get_runObj(run):
     """ Tries to read runParameters.xml to parse the type of sequencer
-        and then return the respective Run object (MiSeq, HiSeq..)
+        and then return the respective Run object (NextSeq)
         :param run: run name identifier
         :type run: string
         :rtype: Object
@@ -39,8 +39,7 @@ def get_runObj(run):
                     "This is quite unexpected. please archive the run {} manually".format(rppath, run))
         return None
     else:
-        # This information about the run type (with HiSeq2.5 applicationaName does not work anymore,
-        # but as for a long time we will have instruments not updated I need to find out something that works
+        # This information about the run type 
         try:
             # Works for recent control software
             runtype = rp.data['RunParameters']["Setup"]["Flowcell"]
@@ -56,9 +55,8 @@ def get_runObj(run):
         if "NextSeq" in runtype:
             return NextSeq_Run(run, CONFIG["analysis"]["NextSeq"])
         else:
-            logger.warn("Unrecognized run type {}, cannot archive the run {}. "
-                        "Someone as likely bought a new sequencer without telling "
-                        "it to the bioinfo team".format(runtype, run))
+            logger.warn("Unrecognized run type {}, cannot parse the run {}. "
+                        "The sequencer must be NextSeq".format(runtype, run))
     return None
 
 def transfer_run(run_dir, analysis):

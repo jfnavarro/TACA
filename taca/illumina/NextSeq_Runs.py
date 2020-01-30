@@ -14,16 +14,13 @@ class NextSeq_Run(Run):
     def __init__(self,  path_to_run, configuration):
         # Constructor, it returns a NextSeq object only 
         # if the NextSeq run belongs to NGI facility, i.e., contains
-        # Application or production in the Description
+        # Application or Production in the Description
         super(NextSeq_Run, self).__init__( path_to_run, configuration)
         # In the NextSeq the sample sheet is created by the operator
         # and placed in the run root folder.
         self.ssname = os.path.join(self.run_dir, "SampleSheet.csv")
-        self._set_sequencer_type()
-        self._set_run_type()
-        
-    def _set_sequencer_type(self):
         self.sequencer_type = "NextSeq"
+        self._set_run_type()
 
     def _set_run_type(self):
         if not os.path.exists(self.ssname):

@@ -158,10 +158,6 @@ class Run(object):
             tsv_writer = csv.writer(tranfer_file, delimiter='\t')
             tsv_writer.writerow([self.id, str(datetime.now())])
         os.remove(os.path.join(self.run_dir, 'transferring'))
-
-        if analysis:
-            # This needs to pass the runtype (i.e., Xten or HiSeq) and start the correct pipeline
-            self.trigger_analysis()
         
     def archive_run(self, destination):
         """ Move run to the archive folder
