@@ -29,7 +29,7 @@ def get_runObj(run):
     else:
         logger.error("Cannot find RunParameters.xml or runParameters.xml in "
                      "the run folder for run {}".format(run))
-        return
+        return None
 
     rppath = os.path.join(run, run_parameters_file)
     try:
@@ -37,6 +37,7 @@ def get_runObj(run):
     except OSError:
         logger.warn("Problems parsing the runParameters.xml file at {}. "
                     "This is quite unexpected. please archive the run {} manually".format(rppath, run))
+        return None
     else:
         # This information about the run type (with HiSeq2.5 applicationaName does not work anymore,
         # but as for a long time we will have instruments not updated I need to find out something that works
@@ -58,6 +59,7 @@ def get_runObj(run):
             logger.warn("Unrecognized run type {}, cannot archive the run {}. "
                         "Someone as likely bought a new sequencer without telling "
                         "it to the bioinfo team".format(runtype, run))
+    return None
 
 def transfer_run(run_dir, analysis):
     """ Interface for click to force a transfer a run to uppmax

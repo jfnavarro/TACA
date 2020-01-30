@@ -18,8 +18,7 @@ class NextSeq_Run(Run):
         super(NextSeq_Run, self).__init__( path_to_run, configuration)
         # In the NextSeq the sample sheet is created by the operator
         # and placed in the run root folder.
-        # For now we use the flow cell id to identify the sample sheet
-        self.ssname = os.path.join(self.run_dir, self.flowcell_id + ".csv")
+        self.ssname = os.path.join(self.run_dir, "SampleSheet.csv")
         self._set_sequencer_type()
         self._set_run_type()
         
@@ -31,48 +30,45 @@ class NextSeq_Run(Run):
             # Case in which no samplesheet is found, assume it is a non NGI run
             self.run_type = "NON-NGI-RUN"
         else:
-            # it SampleSheet exists try to see if it is a NGI-run
-            # TODO SampleSheetParser may throw an exception
-            ssparser = SampleSheetParser(self.ssname)
-            # Jose : a key error can perfectly occur here
-            if ssparser.header['Description'] == "Production" \
-            or ssparser.header['Description'] == "Application" \
-            or ssparser.header['Description'] == "Private":
-                self.run_type = "NGI-RUN"
-            else:
-                # otherwise this is a non NGI run
+            # it sample sheet exists try to see if it is a NGI-run
+            try:
+                ssparser = SampleSheetParser(self.ssname)
+            except:
+                logger.error("Error parsing the samplessheet")
                 self.run_type = "NON-NGI-RUN"
+            else:
+                #TODO Key error can perfectly occur here
+                if ssparser.header['Description'] == "Production" \
+                or ssparser.header['Description'] == "Application" \
+                or ssparser.header['Description'] == "Private":
+                    self.run_type = "NGI-RUN"
+                else:
+                    # otherwise this is a non NGI run
+                    self.run_type = "NON-NGI-RUN"
      
     def check_run_status(self):
         return
 
     def demultiplex_run(self): 
         """ Demultiplex a NextSeq run:
-            - find the samplesheet
-            - make a local copy of the samplesheet and name it SampleSheet.csv
             - define if necessary the bcl2fastq commands (if indexes are not of size 8, i.e. neoprep)
             - run bcl2fastq conversion
         """
-        if not os.path.exists(self.ssname):
-            # We should not get here really and this run should be defined as NON NGI-RUN
-            return False
-        # TODO SampleSheetParser may throw an exception
-        ssparser = SampleSheetParser(self.ssname)
         # Samplesheet need to be positioned in the FC directory with name SampleSheet.csv (Illumina default)
         # if this is not the case then create it and take special care of modification to be done on the SampleSheet
-        samplesheet_dest = os.path.join(self.run_dir, "SampleSheet.csv")
+        #samplesheet_dest = os.path.join(self.run_dir, "SampleSheet.csv")
         # Check that the samplesheet is not already present. In this case go the next step
-        if not os.path.exists(samplesheet_dest):
-            try:
-                with open(samplesheet_dest, 'wb') as fcd:
-                    fcd.write(self._generate_clean_samplesheet(ssparser))
-            except Exception as e:
-                if os.path.exists(samplesheet_dest):
-                    os.remove(samplesheet_dest)
-                logger.error(e)
-                return False
-            logger.info(("Created SampleSheet.csv for Flowcell {} in {} "
-                         .format(self.id, samplesheet_dest)))
+        #if not os.path.exists(samplesheet_dest):
+        #    try:
+        #        with open(samplesheet_dest, 'wb') as fcd:
+        #            fcd.write(self._generate_clean_samplesheet(ssparser))
+        #    except Exception as e:
+        #        if os.path.exists(samplesheet_dest):
+        #            os.remove(samplesheet_dest)
+        #        logger.error(e)
+        #        return False
+        #    logger.info(("Created SampleSheet.csv for Flowcell {} in {} "
+        #                 .format(self.id, samplesheet_dest)))
         # Make the demux call
         with chdir(self.run_dir):
             cl = [self.CONFIG.get('bcl2fastq')['bin']]
@@ -89,9 +85,9 @@ class NextSeq_Run(Run):
                  " run {} on {}".format(os.path.basename(self.id), datetime.now())))
             try:
                 misc.call_external_command_detached(cl, with_log_files=True)
-            except e:
+            except:
                 logger.error("There was an error running bcl2fasq")
-                raise e
+                raise
         return True
         
     def _generate_clean_samplesheet(self, ssparser):

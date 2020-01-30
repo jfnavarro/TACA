@@ -19,15 +19,13 @@ class Run(object):
             raise RuntimeError('Could not locate run directory {}'.format(run_dir))
         
         if 'analysis_server' not in configuration or \
-            'bcl2fastq' not in configuration or \
-            'samplesheets_dir' not in configuration:
-            raise RuntimeError("configuration missing required entries "
-                               "(analysis_server, bcl2fastq, samplesheets_dir)")
+            'bcl2fastq' not in configuration:
+            raise RuntimeError("configuration file missing required entries "
+                               "(analysis_server, bcl2fastq)")
         
         if not os.path.exists(os.path.join(run_dir, 'runParameters.xml')) \
         and os.path.exists(os.path.join(run_dir, 'RunParameters.xml')):
             # In NextSeq runParameters is named RunParameters
-            logger.warning("Renaming RunParameters.xml to runParameters.xml")
             os.rename(os.path.join(run_dir, 'RunParameters.xml'), os.path.join(run_dir, 'runParameters.xml'))
         elif not os.path.exists(os.path.join(run_dir, 'runParameters.xml')):
             raise RuntimeError('Could not locate runParameters.xml in run directory {}'.format(run_dir))
@@ -44,7 +42,6 @@ class Run(object):
         self._set_demux_folder(configuration)
         # This flag tells TACA to move demultiplexed files to the analysis server
         self.transfer_to_analysis_server = True
-        # Probably worth to add the samplesheet name as a variable too
         
     def demultiplex_run(self):
         raise NotImplementedError("Please Implement this method")
