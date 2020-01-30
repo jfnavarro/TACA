@@ -58,15 +58,6 @@ class Run(object):
         else:
             raise RuntimeError("run_type not yet available!!")
 
-    def _set_sequencer_type(self, configuration):
-        raise NotImplementedError("Please Implement this method")
-
-    def _get_sequencer_type(self):
-        if self.sequencer_type:
-            return self.sequencer_type
-        else:
-            raise RuntimeError("sequencer_type not yet available!!")
-
     def _set_demux_folder(self, configuration):
         self.demux_dir = "Demultiplexing"
         for option in self.CONFIG['bcl2fastq']['options']:
@@ -78,9 +69,6 @@ class Run(object):
             return self.demux_dir
         else:
             raise RuntimeError("demux_folder not yet available!!")
-
-    def _get_samplesheet(self):
-        raise NotImplementedError("Please Implement this method")
 
     def _is_demultiplexing_done(self):
         return os.path.exists(os.path.join(self.run_dir,
