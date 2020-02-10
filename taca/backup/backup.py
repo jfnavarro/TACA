@@ -1,14 +1,11 @@
 """Backup methods and utilities"""
-import couchdb
 import logging
 import os
 import re
-import sys
 import shutil
 import subprocess as sp
 import time
 
-from datetime import datetime
 from taca.utils.config import CONFIG
 from taca.utils import filesystem, misc
 
@@ -34,17 +31,17 @@ class backup_utils(object):
         self.host_name = os.getenv('HOSTNAME', os.uname()[1]).split('.', 1)[0]
 
     def fetch_config_info(self):
-        """Try to fecth required info from the config file. Log and exit if any neccesary info is missing"""
+        """Try to fecth required info from the config file. 
+        Log and exit if any neccesary info is missing"""
         try:
             self.data_dirs = CONFIG['backup']['data_dirs']
             self.archive_dirs = CONFIG['backup']['archive_dirs']
             self.keys_path = CONFIG['backup']['keys_path']
             self.gpg_receiver = CONFIG['backup']['gpg_receiver']
             self.mail_recipients = CONFIG['mail']['recipients']
-            self.check_demux = CONFIG.get('backup', {}).get('check_demux', False)
-            self.couch_info = CONFIG.get('statusdb')
         except KeyError as e:
-            logger.error("Config file is missing the key {}, make sure it have all required information".format(str(e)))
+            logger.error("Config file is missing the key {}, " \
+                         "make sure it have all required information".format(str(e)))
             raise SystemExit
 
     def collect_runs(self, ext=None, filter_by_ext=False):
@@ -86,13 +83,14 @@ class backup_utils(object):
         # get available free space from the file system
         try:
             df_proc = sp.Popen(['df', path], stdout=sp.PIPE, stderr=sp.PIPE)
-            df_out, df_err = df_proc.communicate()
+            df_out, _ = df_proc.communicate()
             available_size = int(df_out.strip().split('\n')[-1].strip().split()[2])/1024/1024
         except Exception, e:
             logger.error("Evaluation of disk space failed with error {}".format(e))
             raise SystemExit
         if available_size < required_size:
-            e_msg = "Required space for encryption is {}GB, but only {}GB available".format(required_size, available_size)
+            e_msg = "Required space for encryption is {}GB, " \
+            "but only {}GB available".format(required_size, available_size)
             subjt = "Low space for encryption - {}".format(self.host_name)
             logger.error(e_msg)
             misc.send_mail(subjt, e_msg, self.mail_recipients)
@@ -127,8 +125,9 @@ class backup_utils(object):
             logger.warn("Could not fetch run type for run {}".format(run))
         return run_type
 
-    def _call_commands(self, cmd1, cmd2=None, out_file=None, return_out=False, mail_failed=False, tmp_files=[]):
-        """Call an external command(s) with atmost two commands per function call.
+    def _call_commands(self, cmd1, cmd2=None, out_file=None, return_out=False, 
+                       mail_failed=False, tmp_files=[]):
+        """Call an external command(s) with at most two commands per function call.
         Given 'out_file' is always used for the later cmd and also stdout can be return
         for the later cmd. In case of failure, the 'tmp_files' are removed"""
         if out_file:
@@ -184,24 +183,6 @@ class backup_utils(object):
         for fl in files:
             if os.path.exists(fl):
                 os.remove(fl)
-    
-    def _log_pdc_statusdb(self, run):
-        """Log the time stamp in statusDB if a file is succussfully sent to PDC"""
-        try:
-            run_vals = run.split('_')
-            run_fc = "{}_{}".format(run_vals[0],run_vals[-1]) 
-            server = "http://{username}:{password}@{url}:{port}".format(url=self.couch_info['url'],username=self.couch_info['username'],
-                                                                        password=self.couch_info['password'],port=self.couch_info['port'])
-            couch = couchdb.Server(server)
-            db = couch[self.couch_info['db']]
-            fc_names = {e.key:e.id for e in db.view("names/name", reduce=False)}
-            d_id = fc_names[run_fc]
-            doc = db.get(d_id)
-            doc['pdc_archived'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            db.save(doc)
-            logger.info("Logged 'pdc_archived' timestamp for fc {} in statusdb doc '{}'".format(run, d_id))
-        except:
-            logger.warn("Not able to log 'pdc_archived' timestamp for run {}".format(run))
             
     @classmethod
     def encrypt_runs(cls, run, force):
@@ -216,12 +197,6 @@ class backup_utils(object):
             logger.info("Encryption of run {} is now started".format(run.name))
             # Check if there is enough space and exit if not
             bk.avail_disk_space(run.path, run.name)
-            # Check if the run in demultiplexed
-            if not force and bk.check_demux:
-                if not misc.run_is_demuxed(run.name, bk.couch_info):
-                    logger.warn("Run {} is not demultiplexed yet, so skipping it".format(run.name))
-                    continue
-                logger.info("Run {} is demultiplexed and proceeding with encryption".format(run.name))
             with filesystem.chdir(run.path):
                 # skip run if already ongoing
                 if os.path.exists(run.flag):
@@ -253,7 +228,7 @@ class backup_utils(object):
                 if not bk._call_commands(cmd1="gpg --gen-random 1 256", out_file=run.key, tmp_files=tmp_files):
                     logger.warn("Skipping run {} and moving on".format(run.name))
                     continue
-                logger.info("Generated randon phrase key for run {}".format(run.name))
+                logger.info("Generated random phrase key for run {}".format(run.name))
                 # Calculate md5 sum pre encryption
                 if not force:
                     logger.info("Calculating md5sum before encryption")
@@ -325,8 +300,6 @@ class backup_utils(object):
                         time.sleep(5) # give some time just in case 'dsmc' needs to settle
                         if bk.file_in_pdc(run.zip_encrypted) and bk.file_in_pdc(run.dst_key_encrypted):
                             logger.info("Successfully sent file {} to PDC, removing file locally from {}".format(run.zip_encrypted, run.path))
-                            if bk.couch_info:
-                                bk._log_pdc_statusdb(run.name)
                             bk._clean_tmp_files([run.zip_encrypted, run.dst_key_encrypted, run.flag])
                         continue
                 logger.warn("Sending file {} to PDC failed".format(run.zip_encrypted))
