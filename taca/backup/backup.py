@@ -54,7 +54,7 @@ class backup_utils(object):
                 raise SystemExit
             self.runs.append(run)
         else:
-            for adir in self.archive_dirs.values():
+            for adir in self.archive_dirs:
                 if not os.path.isdir(adir):
                     logger.warn("Path {} does not exist or it is not a directory".format(adir))
                     return self.runs
@@ -69,23 +69,21 @@ class backup_utils(object):
                         self.runs.append(run_vars(os.path.join(adir, item)))
 
     def avail_disk_space(self, path, run):
-        """Check the space on file system based on parent directory of the run"""
-        # not able to fetch runtype use the max size as precaution, size units in GB
-        illumina_run_sizes = {'hiseq' : 500, 'hiseqx' : 900, 'miseq' : 20}
-        required_size = illumina_run_sizes.get(self._get_run_type(run), 900) * 2
+        """Check the space on file system based on GB"""
+        required_size = 500 * 2
         # check for any ongoing runs and add up the required size accrdingly
-        for ddir in self.data_dirs.values():
+        for ddir in self.data_dirs:
             for item in os.listdir(ddir):
                 if not re.match(filesystem.RUN_RE, item):
                     continue
                 if not os.path.exists(os.path.join(ddir, item, "RTAComplete.txt")):
-                    required_size += illumina_run_sizes.get(self._get_run_type(run), 900)
+                    required_size += 500
         # get available free space from the file system
         try:
             df_proc = sp.Popen(['df', path], stdout=sp.PIPE, stderr=sp.PIPE)
             df_out, _ = df_proc.communicate()
             available_size = int(df_out.strip().split('\n')[-1].strip().split()[2])/1024/1024
-        except Exception, e:
+        except Exception as e:
             logger.error("Evaluation of disk space failed with error {}".format(e))
             raise SystemExit
         if available_size < required_size:
@@ -110,20 +108,6 @@ class backup_utils(object):
             msg = "File {} {} in PDC".format(src_file_abs, "exist" if value else "do not exist")
             logger.info(msg)
         return value
-
-    def _get_run_type(self, run):
-        """Returns run type based on the flowcell name"""
-        run_type = ''
-        try:
-            if "ST-" in run:
-                run_type = "hiseqx"
-            elif "-" in run.split('_')[-1]:
-                run_type = "miseq"
-            else:
-                run_type = "hiseq"
-        except:
-            logger.warn("Could not fetch run type for run {}".format(run))
-        return run_type
 
     def _call_commands(self, cmd1, cmd2=None, out_file=None, return_out=False, 
                        mail_failed=False, tmp_files=[]):
@@ -157,7 +141,7 @@ class backup_utils(object):
             if return_out:
                 return (True, p2_out) if cmd2 else (True, p1_out)
             return True
-        except Exception, e:
+        except Exception as e:
             raise e
         finally:
             if out_file:
@@ -276,9 +260,9 @@ class backup_utils(object):
         for run in bk.runs:
             run.flag = "{}.archiving".format(run.name)
             run.dst_key_encrypted = os.path.join(bk.keys_path, run.key_encrypted)
-            if run.path not in bk.archive_dirs.values():
+            if run.path not in bk.archive_dirs:
                 logger.error(("Given run is not in one of the archive directories {}. Kindly move the run {} to appropriate "
-                              "archive dir before sending it to PDC".format(",".join(bk.archive_dirs.values()), run.name)))
+                              "archive dir before sending it to PDC".format(",".join(bk.archive_dirs), run.name)))
                 continue
             if not os.path.exists(run.dst_key_encrypted):
                 logger.error("Encrypted key file {} is not found for file {}, skipping it".format(run.dst_key_encrypted, run.zip_encrypted))
