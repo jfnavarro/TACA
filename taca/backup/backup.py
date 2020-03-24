@@ -35,7 +35,9 @@ class backup_utils(object):
         Log and exit if any neccesary info is missing"""
         try:
             self.data_dirs = CONFIG['backup']['data_dirs']
+            self.data_dirs = self.data_dirs if isinstance(self.data_dirs, list) else [self.data_dirs]
             self.archive_dirs = CONFIG['backup']['archive_dirs']
+            self.archive_dirs = self.archive_dirs if isinstance(self.archive_dirs, list) else [self.archive_dirs]
             self.keys_path = CONFIG['backup']['keys_path']
             self.gpg_receiver = CONFIG['backup']['gpg_receiver']
             self.mail_recipients = CONFIG['mail']['recipients']
